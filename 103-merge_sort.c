@@ -1,90 +1,104 @@
 #include "sort.h"
-
+void _sort(int *arr, size_t left, size_t right, int *temp);
+void _merge(int *arr, size_t left, size_t mid, size_t right, int *temp);
+void _copy(int *arr, int *temp, size_t size);
 /**
- * merge_sort - function to call division of merge function recursively
- * @array: array to be sorted
- * @size: size of the array
- * Return: void
- *
- **/
+ * merge_sort - perform a merge sort
+ * @array: array to sort
+ * @size: size of array
+ */
 void merge_sort(int *array, size_t size)
 {
-	int *tmp;
+	int *temp = malloc(size * sizeof(int));
 
-	if (array == NULL || size <= 1)
+	if (!temp) /* if malloc fails, abort */
 		return;
+	if (array && size > 1) /* check array is not NULL and is 2 elems or > */
+		_sort(array, 0, size - 1, temp);
 
-	tmp = malloc(sizeof(array[0]) * size);
-	if (tmp == NULL)
-		return;
-
-	merge_rec(array, tmp, 0, size);
-	free(tmp);
+	free(temp);
 }
 /**
- * merge_rec - recursion part of the merge sort
- * @array: array to be sorted
- * @tmp: temporary array to store sorted elements
- * @left: left index of array to sort
- * @right: right index of array to sort
- * Return: void
- *
- **/
-void merge_rec(int *array, int *tmp, size_t left, size_t right)
+ * _sort - break array into sub-arrays of single elements
+ * @arr: array to subdivide
+ * @left: left boundary of array or sub-array
+ * @right: right boundary of array or sub-array
+ * @temp: buffer for _merge
+ */
+void _sort(int *arr, size_t left, size_t right, int *temp)
 {
-	size_t middle, i = 0, newleft = 0, newright = 0;
+	size_t mid, size = (right + 1) - left;
 
-	if (right - left <= 1)
+	/* print_array(&arr[left], (right + 1) - left); */
+
+	if (size == 1) /* base case */
 		return;
 
-	middle = (right + left) / 2;
-	merge_rec(array, tmp, left, middle);
-	merge_rec(array, tmp, middle, right);
-	printf("Merging...\n");
-	print(array, "left", left, middle);
-	print(array, "right", middle, right);
-	newleft = left;
-	newright = middle;
+	mid = left + ((size / 2) - 1); /* calculate middle index */
 
-	for (i = left; i < right; i++)
+	_sort(arr, left, mid, temp);
+	_sort(arr, mid + 1, right, temp);
+
+	_merge(arr, left, mid, right, temp);
+}
+/**
+ * _merge - merge sub-arrays into source array in ascending order
+ * @arr: array to be sorted
+ * @left: left boundary of array or sub-array
+ * @mid: pivot between left and right sub-arrays (included in left)
+ * @right: right boundary of array or sub-array
+ * @temp: temporary buffer
+ */
+void _merge(int *arr, size_t left, size_t mid, size_t right, int *temp)
+{
+	size_t i_l = mid, i_r = right, j = right - left;
+	int l_merged = 0;
+
+	printf("Merging...\n[left]: "); /* print sub-arrays */
+	print_array(&arr[left], (mid + 1) - left);
+	printf("[right]: ");
+	print_array(&arr[mid + 1], (right + 1) - (mid + 1));
+
+	for (; i_l >= left && i_r >= mid + 1;) /* compare individual elements */
 	{
-		if (newleft < middle && (newright >= right || array[newleft]
-					< array[newright]))
-		{
-			tmp[i] = array[newleft];
-			newleft++;
-		}
+		if (arr[i_r] >= arr[i_l])
+			temp[j--] = arr[i_r--];
 		else
 		{
-			tmp[i] = array[newright];
-			newright++;
+			temp[j--] = arr[i_l];
+			if (i_l == 0)
+			{
+				l_merged = 1;
+				break;
+			}
+			i_l--;
 		}
 	}
-	print(tmp, "Done", left, right);
-	for (i = left; i < right; i++)
+	/* merges rest of whichever sub-array isn't fully merged */
+	for (; i_r >= mid + 1;)
+		temp[j--] = arr[i_r--];
+	for (; !l_merged && i_l >= left;)
 	{
-		array[i] = tmp[i];
+		temp[j--] = arr[i_l];
+		if (i_l == 0) /* guards against size_t underflow */
+			break;
+		i_l--;
 	}
+	/* copy sorted temp back to source array */
+	_copy(&arr[left], temp, (right + 1) - left);
+	printf("[Done]: "); /* print sorted array */
+	print_array(&arr[left], (right + 1) - left);
 }
 /**
- * print - print function to print arrays
- * @array: array to be printed
- * @order: order of array to be printed
- * @left: left index to print
- * @right: right index to print
- * Return: void
- *
- **/
-void print(int *array, char *order, size_t left, size_t right)
+ * _copy - copy contents from temp array to source (same size)
+ * @arr: copy destination
+ * @temp: copy source
+ * @size: size of arrays
+ */
+void _copy(int *arr, int *temp, size_t size)
 {
-	size_t n;
+	size_t i = 0;
 
-	printf("[%s]: ", order);
-	for (n = left; n < right; n++)
-	{
-		if (n > left)
-			printf(", ");
-		printf("%d", array[n]);
-	}
-	printf("\n");
+	for (; i < size; i++)
+		arr[i] = temp[i];
 }
